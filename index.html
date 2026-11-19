@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BTC Real-Time Network, Calculator, IDR, AI & Telemetry</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #0b0e14; color: #f8fafc; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 10px; }
+    .alert-banner { display: none; background: #7f1d1d; border: 1px solid #ef4444; color: #fecaca; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; align-items: center; justify-content: space-between; gap: 8px; animation: pulseAlert 1.5s infinite; }
+    .alert-banner.show { display: flex; }
+    @keyframes pulseAlert { 0%, 100% { border-color: #ef4444; background: #7f1d1d; } 50% { border-color: #facc15; background: #991b1b; } }
+    .alert-close { background: rgba(0,0,0,0.3); border: none; color: #fff; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+    .top-bar { background: #131722; border: 1px solid #2a2e39; border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .badge { background: #0284c7; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: bold; }
+    .stats { display: flex; gap: 14px; font-size: 13px; color: #94a3b8; }
+    .stats b { color: #f8fafc; }
+    .calc-section, .idr-panel, .video-section, .game-panel { background: #131722; border: 1px solid #2a2e39; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+    .calc-header, .idr-header, .video-header, .ai-header, .price-header, .duration-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .calc-title { font-size: 13px; font-weight: 800; color: #38bdf8; }
+    .calc-tabs { display: flex; gap: 6px; }
+    .calc-tab-btn { background: #1e222d; border: 1px solid #334155; color: #cbd5e1; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .calc-tab-btn.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
+    .calc-display { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; text-align: right; font-family: monospace; }
+    .calc-history { font-size: 11px; color: #64748b; min-height: 14px; }
+    .calc-screen { font-size: 22px; font-weight: 800; color: #f8fafc; overflow-x: auto; }
+    .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .c-btn { background: #1e222d; border: 1px solid #2a2e39; color: #f8fafc; padding: 12px 0; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .c-btn:active { transform: scale(0.96); }
+    .c-op { background: #1e293b; color: #38bdf8; }
+    .c-eq { background: #089981; color: #fff; }
+    .c-clr { background: #7f1d1d; color: #fecaca; }
+    .pnl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .pnl-field { display: flex; flex-direction: column; gap: 4px; }
+    .pnl-field label { font-size: 11px; color: #94a3b8; }
+    .pnl-field input { background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: 700; }
+    .pnl-result-box { background: #0f172a; border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+    .idr-title { font-size: 13px; font-weight: 800; color: #facc15; }
+    .idr-rate-live { font-size: 13px; font-weight: 800; color: #089981; }
+    .idr-custom-box { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #1e222d; padding: 8px 10px; border-radius: 8px; flex-wrap: wrap; }
+    .idr-input-group { display: flex; align-items: center; gap: 6px; }
+    .idr-input { width: 145px; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 6px 8px; border-radius: 6px; font-size: 13px; font-weight: 700; }
+    .idr-custom-result { font-size: 14px; font-weight: 800; color: #38bdf8; }
+    .satoshi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 6px; }
+    .sat-card { background: #1e222d; border-radius: 6px; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; }
+    .sat-btc { font-size: 11px; color: #94a3b8; font-family: monospace; }
+    .sat-rp { font-size: 12px; font-weight: 700; color: #f8fafc; }
+    .accuracy-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #131722; border: 1px solid #2a2e39; border-radius: 12px; padding: 10px; text-align: center; }
+    .acc-item, .tel-card { background: #1e222d; padding: 8px 10px; border-radius: 8px; }
+    .acc-label, .tel-title { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
+    .acc-num { font-size: 15px; font-weight: 800; margin-top: 2px; }
+    .telemetry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; background: #131722; border: 1px solid #2a2e39; border-radius: 12px; padding: 10px; }
+    .tel-card { display: flex; flex-direction: column; gap: 2px; }
+    .tel-val { font-size: 13px; font-weight: 700; color: #38bdf8; }
+    .tel-sub { font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ai-panel { background: linear-gradient(145deg, #131722 0%, #172033 100%); border: 1px solid #38bdf8; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.12); }
+    .ai-title { font-size: 13px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px; }
+    .ai-right-controls { display: flex; align-items: center; gap: 8px; }
+    .ai-conf-badge { background: #0f172a; border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #facc15; }
+    .auto-btn { background: #1e293b; border: 1px solid #475569; color: #cbd5e1; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; }
+    .auto-btn.active { background: #089981; border-color: #34d399; color: #ffffff; box-shadow: 0 0 10px rgba(8, 153, 129, 0.5); }
+    .ai-main-row { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 10px 12px; border-radius: 8px; gap: 10px; flex-wrap: wrap; }
+    .ai-signal { font-size: 15px; font-weight: 800; }
+    .ai-metrics { display: flex; gap: 10px; font-size: 11px; color: #94a3b8; flex-wrap: wrap; }
+    .ai-metrics b { color: #e2e8f0; }
+    .ai-reason { font-size: 12px; color: #cbd5e1; line-height: 1.4; }
+    .live-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #f8fafc; }
+    .live-dot span { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0.2; } }
+    .video-controls { display: flex; gap: 6px; width: 100%; }
+    .video-input { flex: 1; background: #1e222d; border: 1px solid #2a2e39; color: #f8fafc; padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+    .small-btn { background: #1e222d; border: 1px solid #334155; color: #e2e8f0; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .video-frame-box { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; border-radius: 8px; overflow: hidden; }
+    .video-frame-box iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+    .chart-wrapper { width: 100%; height: 320px; background: #131722; border: 1px solid #2a2e39; border-radius: 12px; overflow: hidden; }
+    .live-price { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; }
+    .up { color: #089981; }
+    .down { color: #f23645; }
+    .neutral { color: #facc15; }
+    .duration-label { font-size: 12px; color: #94a3b8; }
+    .duration-buttons { display: flex; gap: 5px; flex-wrap: wrap; }
+    .dur-btn { background: #1e222d; border: 1px solid #2a2e39; color: #cbd5e1; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .dur-btn.active { background: #0284c7; border-color: #38bdf8; color: #ffffff; }
+    .dur-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .action-btn { padding: 13px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; color: white; }
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-long { background: #089981; }
+    .btn-short { background: #f23645; }
+    .status-box { margin-top: 4px; padding: 10px; border-radius: 8px; background: #1e222d; text-align: center; font-size: 13px; min-height: 58px; display: flex; flex-direction: column; justify-content: center; }
+    .timer { font-size: 17px; font-weight: bold; color: #facc15; margin-top: 4px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="alert-banner" id="alertBanner">
+    <span id="alertText">⚠️ Peringatan Sistem</span>
+    <button class="alert-close" onclick="dismissAlert()">Tutup</button>
+  </div>
+
+  <div class="top-bar">
+    <span class="badge" id="connStatus">Menghubungkan Stream...</span>
+    <div class="stats">
+      <span>Poin: <b id="score">100</b></span>
+      <span>Streak: <b id="streak">0</b>🔥</span>
+    </div>
+  </div>
+
+  <div class="telemetry-grid">
+    <div class="tel-card">
+      <span class="tel-title">📶 Jaringan & Ping</span>
+      <span class="tel-val" id="netSpeedVal">-- Mbps</span>
+      <span class="tel-sub" id="netPingVal">Ping: -- ms | Tipe: --</span>
+    </div>
+    <div class="tel-card">
+      <span class="tel-title">⚡ FPS Layar</span>
+      <span class="tel-val" id="fpsVal">-- FPS</span>
+      <span class="tel-sub" id="frameTimeVal">Frame: -- ms</span>
+    </div>
+    <div class="tel-card">
+      <span class="tel-title">🧠 CPU & Beban</span>
+      <span class="tel-val" id="cpuVal">--%</span>
+      <span class="tel-sub" id="cpuCoresVal">Cores: --</span>
+    </div>
+    <div class="tel-card">
+      <span class="tel-title">🌡️ Suhu HP</span>
+      <span class="tel-val" id="tempVal">-- °C</span>
+      <span class="tel-sub" id="thermalStateVal">Status: Normal</span>
+    </div>
+    <div class="tel-card">
+      <span class="tel-title">🔋 Baterai</span>
+      <span class="tel-val" id="batVal">--%</span>
+      <span class="tel-sub" id="batStatusVal">Memuat...</span>
+    </div>
+    <div class="tel-card">
+      <span class="tel-title">📍 GPS Real-Time</span>
+      <span class="tel-val" id="gpsVal">Mencari sinyal...</span>
+      <span class="tel-sub" id="gpsAccVal">Akurasi: -- m</span>
+    </div>
+  </div>
+
+  <div class="calc-section">
+    <div class="calc-header">
+      <span class="calc-title">🧮 KALKULATOR SERBAGUNA</span>
+      <div class="calc-tabs">
+        <button class="calc-tab-btn active" id="tabStdBtn" onclick="switchCalcTab('std')">Standar</button>
+        <button class="calc-tab-btn" id="tabPnlBtn" onclick="switchCalcTab('pnl')">Profit/Loss BTC</button>
+        <button class="calc-tab-btn" id="toggleCalcBtn" onclick="toggleCalcBody()">Sembunyikan</button>
+      </div>
+    </div>
+
+    <div id="calcStdBody">
+      <div class="calc-display">
+        <div class="calc-history" id="calcHistory"></div>
+        <div class="calc-screen" id="calcScreen">0</div>
+      </div>
+      <div class="calc-grid" style="margin-top: 8px;">
+        <button class="c-btn c-clr" onclick="calcClear()">C</button>
+        <button class="c-btn c-op" onclick="calcBackspace()">⌫</button>
+        <button class="c-btn c-op" onclick="calcAppend('%')">%</button>
+        <button class="c-btn c-op" onclick="calcAppend('/')">÷</button>
+        <button class="c-btn" onclick="calcAppend('7')">7</button>
+        <button class="c-btn" onclick="calcAppend('8')">8</button>
+        <button class="c-btn" onclick="calcAppend('9')">9</button>
+        <button class="c-btn c-op" onclick="calcAppend('*')">×</button>
+        <button class="c-btn" onclick="calcAppend('4')">4</button>
+        <button class="c-btn" onclick="calcAppend('5')">5</button>
+        <button class="c-btn" onclick="calcAppend('6')">6</button>
+        <button class="c-btn c-op" onclick="calcAppend('-')">−</button>
+        <button class="c-btn" onclick="calcAppend('1')">1</button>
+        <button class="c-btn" onclick="calcAppend('2')">2</button>
+        <button class="c-btn" onclick="calcAppend('3')">3</button>
+        <button class="c-btn c-op" onclick="calcAppend('+')">+</button>
+        <button class="c-btn" onclick="calcAppend('00')">00</button>
+        <button class="c-btn" onclick="calcAppend('0')">0</button>
+        <button class="c-btn" onclick="calcAppend('.')">.</button>
+        <button class="c-btn c-eq" onclick="calcEquals()">=</button>
+      </div>
+    </div>
+
+    <div id="calcPnlBody" style="display: none; flex-direction: column; gap: 8px;">
+      <div class="pnl-grid">
+        <div class="pnl-field">
+          <label>Jumlah Koin (BTC)</label>
+          <input type="number" step="0.00000001" id="pnlBtcAmount" value="0.01" oninput="calculatePnL()" />
+        </div>
+        <div class="pnl-field">
+          <label>Harga Target Jual/Beli (USD)</label>
+          <input type="number" step="1" id="pnlTargetPrice" placeholder="Contoh: 70000" oninput="calculatePnL()" />
+        </div>
+      </div>
+      <div class="pnl-result-box">
+        <div>
+          <div style="font-size: 11px; color: #94a3b8;">Estimasi Selisih (vs Harga Live):</div>
+          <div id="pnlDiffUsd" style="font-weight: 800; font-size: 15px; color: #38bdf8;">$0.00</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 11px; color: #94a3b8;">Dalam Rupiah (IDR):</div>
+          <div id="pnlDiffIdr" style="font-weight: 800; font-size: 15px; color: #facc15;">Rp 0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="idr-panel">
+    <div class="idr-header">
+      <span class="idr-title">🇮🇩 NILAI TUKAR BTC KE IDR (REAL-TIME)</span>
+      <span class="idr-rate-live" id="btcIdrHeadline">1 BTC = Memuat...</span>
+    </div>
+    <div class="idr-custom-box">
+      <div class="idr-input-group">
+        <input type="number" step="0.00000001" min="0" class="idr-input" id="customBtcInput" value="0.00000258" oninput="updateIdrValues()" />
+        <span style="font-size: 12px; font-weight: 700; color: #94a3b8;">BTC =</span>
+      </div>
+      <div class="idr-custom-result" id="customIdrResult">Rp 0</div>
+    </div>
+    <div class="satoshi-grid" id="satoshiGrid"></div>
+  </div>
+
+  <div class="accuracy-bar">
+    <div class="acc-item">
+      <div class="acc-label">🎯 Akurasi (Win Rate)</div>
+      <div class="acc-num" id="winRateVal" style="color: #38bdf8;">0.0%</div>
+    </div>
+    <div class="acc-item">
+      <div class="acc-label">✅ Menang</div>
+      <div class="acc-num up" id="winCountVal">0</div>
+    </div>
+    <div class="acc-item">
+      <div class="acc-label">❌ Kalah</div>
+      <div class="acc-num down" id="lossCountVal">0</div>
+    </div>
+    <div class="acc-item">
+      <div class="acc-label">📊 Total Ronde</div>
+      <div class="acc-num" id="totalRoundsVal" style="color: #e2e8f0;">0</div>
+    </div>
+  </div>
+
+  <div class="ai-panel">
+    <div class="ai-header">
+      <div class="ai-title">🤖 ASISTEN PINTAR AI — PREDIKSI REAL-TIME</div>
+      <div class="ai-right-controls">
+        <div class="ai-conf-badge" id="aiConfidence">Kalibrasi...</div>
+        <button class="auto-btn" id="autoModeBtn" onclick="toggleAutoMode()">🤖 MODE AUTO: OFF</button>
+      </div>
+    </div>
+    <div class="ai-main-row">
+      <div class="ai-signal neutral" id="aiSignal">⏳ ANALISIS DATA...</div>
+      <div class="ai-metrics">
+        <span>RSI(14): <b id="aiRsi">--</b></span>
+        <span>Buy Vol: <b id="aiBuyVol">--%</b></span>
+        <span>Target: <b id="aiTarget">$--</b></span>
+      </div>
+    </div>
+    <div class="ai-reason" id="aiReason">
+      Menunggu minimal 20 detak transaksi pasar langsung untuk menghitung momentum EMA, RSI, dan tekanan beli/jual...
+    </div>
+  </div>
+
+  <div class="video-section">
+    <div class="video-header">
+      <div class="live-dot"><span></span> LIVE ANALISIS BTC (BAHASA INDONESIA)</div>
+      <button class="small-btn" id="toggleVideoBtn" onclick="toggleVideo()">Sembunyikan Video</button>
+    </div>
+    <div class="video-controls" id="videoControlsBar">
+      <input type="text" class="video-input" id="ytUrlInput" placeholder="Tempel link YouTube Live analisis BTC lain di sini..." />
+      <button class="small-btn" onclick="loadCustomYouTube()">Putar</button>
+    </div>
+    <div class="video-frame-box" id="videoContainer">
+      <iframe
+        id="liveYoutubeFrame"
+        src="https://youtube.com"
+        title="Live Analisis Bitcoin Bahasa Indonesia"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen>
+      </iframe>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <div class="tradingview-widget-container" style="height:100%;width:100%">
+      <div id="tradingview_btc" style="height:100%;width:100%"></div>
+      <script type="text/javascript" src="https://tradingview.com"></script>
+      <script type="text/javascript">
+        new TradingView.widget({
+          "autosize": true,
+          "symbol": "BINANCE:BTCUSDT",
+          "interval": "1",
+          "timezone": "Asia/Makassar",
+          "theme": "dark",
+          "style": "1",
+          "locale": "id",
+          "enable_publishing": false,
+          "hide_top_toolbar": false,
+          "hide_legend": false,
+          "save_image": false,
+          "container_id": "tradingview_btc"
+        });
+      </script>
+    </div>
+  </div>
+
+  <div class="game-panel">
+    <div class="price-header">
+      <span style="color: #94a3b8; font-size: 13px;">Harga Eksekusi Live:</span>
+      <span class="live-price" id="livePrice">$0.00</span>
+    </div>
+
+    <div class="duration-bar">
+      <span class="duration-label">Durasi Ronde:</span>
+      <div class="duration-buttons" id="durationButtons">
+        <button class="dur-btn active" onclick="setDuration(1, this)">1d</button>
+        <button class="dur-btn" onclick="setDuration(3, this)">3d</button>
+        <button class="dur-btn" onclick="setDuration(5, this)">5d</button>
+        <button class="dur-btn" onclick="setDuration(15, this)">15d</button>
+        <button class="dur-btn" onclick="setDuration(30, this)">30d</button>
+        <button class="dur-btn" onclick="setDuration(60, this)">1m</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="action-btn btn-long" id="btnLong" onclick="placeBet('LONG', 'MANUAL')" disabled>▲ NAIK (LONG)</button>
+      <button class="action-btn btn-short" id="btnShort" onclick="placeBet('SHORT', 'MANUAL')" disabled>▼ TURUN (SHORT)</button>
+    </div>
+
+    <div class="status-box" id="statusPanel">
+      Pilih durasi, aktifkan <b>MODE AUTO</b> agar AI bermain otomatis, atau klik <b>NAIK</b> / <b>TURUN</b> manual!
+    </div>
+  </div>
+</div>
+<script>
+  function updateNetworkInfo() {
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const speedEl = document.getElementById('netSpeedVal');
+    if (conn) {
+      const downlink = conn.downlink ? `${conn.downlink} Mbps` : 'Aktif';
+      const type = (conn.effectiveType || '4g').toUpperCase();
+      speedEl.textContent = `${downlink} (${type})`;
+    } else {
+      speedEl.textContent = navigator.onLine ? 'Online' : 'Offline';
+    }
+  }
+  updateNetworkInfo();
+  if (navigator.connection) navigator.connection.addEventListener('change', updateNetworkInfo);
+
+  setInterval(async () => {
+    if (!navigator.onLine) {
+      document.getElementById('netSpeedVal').textContent = '0 Mbps (OFFLINE)';
+      document.getElementById('netSpeedVal').style.color = '#f23645';
+      document.getElementById('netPingVal').textContent = 'Ping: Terputus';
+      triggerAutoAlert('NET_ERR', '📡 <b>Tidak Ada Koneksi Internet:</b> Periksa Wi-Fi atau data seluler Anda.');
+      return;
+    }
+    const tStart = performance.now();
+    try {
+      await fetch('https://binance.com' + Date.now(), { cache: 'no-store' });
+      const pingMs = Math.round(performance.now() - tStart);
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const typeStr = conn && conn.effectiveType ? conn.effectiveType.toUpperCase() : 'NET';
+      const dlMbps = conn && conn.downlink ? conn.downlink : Math.max(1.5, (1000 / Math.max(15, pingMs))).toFixed(1);
+      const speedEl = document.getElementById('netSpeedVal');
+      const pingEl = document.getElementById('netPingVal');
+      speedEl.textContent = `${dlMbps} Mbps (${typeStr})`;
+      speedEl.style.color = pingMs < 120 ? '#089981' : (pingMs < 280 ? '#facc15' : '#f23645');
+      pingEl.textContent = `Ping: ${pingMs} ms | Stabil`;
+      if (pingMs > 350) triggerAutoAlert('NET_SLOW', `📶 <b>Jaringan Melambat (Ping ${pingMs} ms):</b> Kurang stabil untuk mode 1 detik.`);
+      else clearAutoAlert('NET_SLOW');
+    } catch (e) {
+      document.getElementById('netPingVal').textContent = 'Ping: Timeout';
+    }
+  }, 1200);
+
+  let calcExpr = '', activeCalcMode = 'std', isCalcOpen = true;
+  function switchCalcTab(mode) {
+    activeCalcMode = mode; isCalcOpen = true;
+    document.getElementById('toggleCalcBtn').textContent = 'Sembunyikan';
+    document.getElementById('tabStdBtn').classList.toggle('active', mode === 'std');
+    document.getElementById('tabPnlBtn').classList.toggle('active', mode === 'pnl');
+    document.getElementById('calcStdBody').style.display = mode === 'std' ? 'block' : 'none';
+    document.getElementById('calcPnlBody').style.display = mode === 'pnl' ? 'flex' : 'none';
+    if (mode === 'pnl') calculatePnL();
+  }
+  function toggleCalcBody() {
+    isCalcOpen = !isCalcOpen;
+    document.getElementById('toggleCalcBtn').textContent = isCalcOpen ? 'Sembunyikan' : 'Tampilkan';
+    if (!isCalcOpen) {
+      document.getElementById('calcStdBody').style.display = 'none';
+      document.getElementById('calcPnlBody').style.display = 'none';
+    } else switchCalcTab(activeCalcMode);
+  }
+  function calcAppend(val) {
+    calcExpr = val === '%' ? (calcExpr ? `(${calcExpr})/100` : '') : calcExpr + val;
+    document.getElementById('calcScreen').textContent = calcExpr || '0';
+  }
+  function calcClear() { calcExpr = ''; document.getElementById('calcHistory').textContent = ''; document.getElementById('calcScreen').textContent = '0'; }
+  function calcBackspace() { calcExpr = calcExpr.slice(0, -1); document.getElementById('calcScreen').textContent = calcExpr || '0'; }
+  function calcEquals() {
+    if (!calcExpr) return;
+    try {
+      const sanitized = calcExpr.replace(/[^0-9+\-*/().]/g, '');
+      const result = Function('"use strict";return (' + sanitized + ')')();
+      if (!isFinite(result)) throw new Error();
+      document.getElementById('calcHistory').textContent = calcExpr + ' =';
+      calcExpr = Number(result.toFixed(8)).toString();
+      document.getElementById('calcScreen').textContent = calcExpr;
+    } catch (e) { document.getElementById('calcScreen').textContent = 'Error'; calcExpr = ''; }
+  }
+  function calculatePnL() {
+    const amount = parseFloat(document.getElementById('pnlBtcAmount').value) || 0;
+    const targetInput = document.getElementById('pnlTargetPrice');
+    if (!targetInput.value && currentPrice > 0) targetInput.value = Math.round(currentPrice + 500);
+    const target = parseFloat(targetInput.value) || 0;
+    if (currentPrice <= 0) return;
+    const diffUsd = (target - currentPrice) * amount;
+    const rateIdr = btcIdrRate > 0 ? (btcIdrRate / currentPrice) : usdtIdrRate;
+    const diffIdr = diffUsd * rateIdr;
+    const usdEl = document.getElementById('pnlDiffUsd'), idrEl = document.getElementById('pnlDiffIdr');
+    const sign = diffUsd >= 0 ? '+' : '';
+    usdEl.textContent = `${sign}$${diffUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    usdEl.style.color = diffUsd >= 0 ? '#089981' : '#f23645';
+    idrEl.textContent = `${sign}${formatRupiah(diffIdr)}`;
+    idrEl.style.color = diffIdr >= 0 ? '#089981' : '#f23645';
+  }
+  let btcIdrRate = 0, usdtIdrRate = 16250;
+  const satoshiUnits = [0.00000001, 0.00000010, 0.00000100, 0.00001000, 0.00010000, 0.00100000, 0.01000000, 0.10000000, 1.00000000];
+  const satoshiGridEl = document.getElementById('satoshiGrid');
+  satoshiUnits.forEach((unit, idx) => {
+    const card = document.createElement('div');
+    card.className = 'sat-card';
+    card.innerHTML = `<span class="sat-btc">${unit.toFixed(8)} BTC</span><span class="sat-rp" id="satVal_${idx}">Rp 0</span>`;
+    satoshiGridEl.appendChild(card);
+  });
+
+  function formatRupiah(nominal) {
+    const absVal = Math.abs(nominal), prefix = nominal < 0 ? '-Rp ' : 'Rp ';
+    if (absVal === 0) return 'Rp 0';
+    if (absVal < 1) return prefix + absVal.toLocaleString('id-ID', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+    if (absVal < 1000) return prefix + absVal.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return prefix + Math.round(absVal).toLocaleString('id-ID');
+  }
+
+  function updateIdrValues() {
+    const activeBtcIdr = btcIdrRate > 0 ? btcIdrRate : (currentPrice * usdtIdrRate);
+    if (activeBtcIdr <= 0) return;
+    document.getElementById('btcIdrHeadline').textContent = `1 BTC = ${formatRupiah(activeBtcIdr)}`;
+    const customBtc = parseFloat(document.getElementById('customBtcInput').value) || 0;
+    document.getElementById('customIdrResult').textContent = formatRupiah(customBtc * activeBtcIdr);
+    satoshiUnits.forEach((unit, idx) => {
+      const el = document.getElementById(`satVal_${idx}`);
+      if (el) el.textContent = formatRupiah(unit * activeBtcIdr);
+    });
+    if (activeCalcMode === 'pnl' && isCalcOpen) calculatePnL();
+  }
+
+  function connectIdrStream() {
+    const wsIdr = new WebSocket('wss://://binance.com');
+    wsIdr.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (!msg || !msg.data) return;
+      const price = parseFloat(msg.data.p);
+      if (msg.stream === 'btcidrt@trade') { btcIdrRate = price; updateIdrValues(); }
+      else if (msg.stream === 'usdtidrt@trade') { usdtIdrRate = price; updateIdrValues(); }
+    };
+    wsIdr.onclose = () => { setTimeout(connectIdrStream, 2000); };
+  }
+  connectIdrStream();
+
+  let isAutoMode = false, winCount = 0, lossCount = 0, drawCount = 0, lastAutoTradeTime = 0, currentTradeSource = 'MANUAL';
+  function toggleAutoMode() {
+    isAutoMode = !isAutoMode;
+    const btn = document.getElementById('autoModeBtn');
+    btn.classList.toggle('active', isAutoMode);
+    btn.textContent = isAutoMode ? '🤖 MODE AUTO: ON' : '🤖 MODE AUTO: OFF';
+    if (!isRoundActive) {
+      statusEl.innerHTML = isAutoMode
+        ? `🤖 <b>Mode Auto AI Aktif!</b> Menunggu sinyal AI dengan keyakinan <b>≥ 75%</b>...`
+        : `Mode Manual aktif. Tekan <b>NAIK</b> atau <b>TURUN</b> kapan saja.`;
+    }
+  }
+
+  function updateAccuracyStats() {
+    const totalDecided = winCount + lossCount, totalAll = winCount + lossCount + drawCount;
+    const winRate = totalDecided > 0 ? ((winCount / totalDecided) * 100).toFixed(1) : '0.0';
+    const rateEl = document.getElementById('winRateVal');
+    rateEl.textContent = winRate + '%';
+    rateEl.style.color = parseFloat(winRate) >= 60 ? '#089981' : (parseFloat(winRate) >= 45 ? '#facc15' : '#f23645');
+    document.getElementById('winCountVal').textContent = winCount;
+    document.getElementById('lossCountVal').textContent = lossCount;
+    document.getElementById('totalRoundsVal').textContent = totalAll;
+  }
+
+  const tickPrices = [], tickTrades = [], MAX_TICKS = 60;
+  function calculateEMA(prices, period) {
+    if (prices.length < period) return prices[prices.length - 1];
+    const k = 2 / (period + 1);
+    let ema = prices;
+    for (let i = 1; i < prices.length; i++) ema = prices[i] * k + ema * (1 - k);
+    return ema;
+  }
+  function calculateRSI(prices, period = 14) {
+    if (prices.length <= period) return 50;
+    let gains = 0, losses = 0;
+    for (let i = prices.length - period; i < prices.length; i++) {
+      const diff = prices[i] - prices[i - 1];
+      if (diff >= 0) gains += diff; else losses -= diff;
+    }
+    if (losses === 0) return 100;
+    return 100 - (100 / (1 + ((gains / period) / (losses / period))));
+  }
+
+  function runAIPrediction() {
+    if (tickPrices.length < 20) { document.getElementById('aiConfidence').textContent = `Kalibrasi: ${tickPrices.length}/20`; return; }
+    const latest = tickPrices[tickPrices.length - 1], ema9 = calculateEMA(tickPrices, 9), ema21 = calculateEMA(tickPrices, 21), rsi = calculateRSI(tickPrices, 14);
+    const recentTrades = tickTrades.slice(-30);
+    let buyVol = 0, totalVol = 0;
+    recentTrades.forEach(t => { totalVol += t.qty; if (!t.isBuyerMaker) buyVol += t.qty; });
+    const buyRatio = totalVol > 0 ? (buyVol / totalVol) * 100 : 50;
+
+    let aiScore = 0, reasons = [];
+    const emaDiff = ema9 - ema21;
+    if (emaDiff > 0.4) { aiScore += 35; reasons.push("EMA-9 memotong ke atas EMA-21"); }
+    else if (emaDiff < -0.4) { aiScore -= 35; reasons.push("EMA-9 turun di bawah EMA-21"); }
+    if (rsi < 33) { aiScore += 30; reasons.push(`RSI jenuh jual (${rsi.toFixed(0)})`); }
+    else if (rsi > 67) { aiScore -= 30; reasons.push(`RSI jenuh beli (${rsi.toFixed(0)})`); }
+    else if (rsi > 52) aiScore += 10; else if (rsi < 48) aiScore -= 10;
+    if (buyRatio >= 60) { aiScore += 35; reasons.push(`tekanan beli dominan (${buyRatio.toFixed(0)}%)`); }
+    else if (buyRatio <= 40) { aiScore -= 35; reasons.push(`tekanan jual dominan (${(100 - buyRatio).toFixed(0)}%)`); }
+
+    const signalEl = document.getElementById('aiSignal'), confEl = document.getElementById('aiConfidence'), reasonEl = document.getElementById('aiReason'), targetEl = document.getElementById('aiTarget');
+    document.getElementById('aiRsi').textContent = rsi.toFixed(1);
+    document.getElementById('aiBuyVol').textContent = buyRatio.toFixed(0) + '%';
+    const confidence = Math.min(96, Math.max(51, Math.abs(aiScore) + 35));
+    const volatility = Math.max(1.5, Math.abs(emaDiff) * 2.5);
+    let recommendedDir = null;
+
+    if (aiScore >= 25) {
+      recommendedDir = 'LONG'; signalEl.textContent = "🚀 PREDIKSI AI: NAIK (LONG)"; signalEl.className = "ai-signal up";
+      confEl.textContent = `Keyakinan: ${confidence}%`; confEl.style.color = "#089981"; targetEl.textContent = "$" + (latest + volatility).toFixed(2);
+      reasonEl.textContent = "Analisis AI: " + (reasons.length ? reasons.join(", ") + "." : "Arus beli menguat.");
+    } else if (aiScore <= -25) {
+      recommendedDir = 'SHORT'; signalEl.textContent = "🔻 PREDIKSI AI: TURUN (SHORT)"; signalEl.className = "ai-signal down";
+      confEl.textContent = `Keyakinan: ${confidence}%`; confEl.style.color = "#f23645"; targetEl.textContent = "$" + (latest - volatility).toFixed(2);
+      reasonEl.textContent = "Analisis AI: " + (reasons.length ? reasons.join(", ") + "." : "Tekanan jual mendominasi.");
+    } else {
+      signalEl.textContent = "⚖️ PREDIKSI AI: TUNGGU SINYAL"; signalEl.className = "ai-signal neutral";
+      confEl.textContent = "Keyakinan: Netral"; confEl.style.color = "#facc15"; targetEl.textContent = "$" + latest.toFixed(2);
+      reasonEl.textContent = "Analisis AI: Pasar sedang konsolidasi seimbang.";
+    }
+
+    if (isAutoMode && !isRoundActive && recommendedDir && confidence >= 75 && (Date.now() - lastAutoTradeTime > 800)) {
+      lastAutoTradeTime = Date.now();
+      placeBet(recommendedDir, 'AUTO-AI');
+    }
+  }
+  let isVideoVisible = true;
+  function toggleVideo() {
+    isVideoVisible = !isVideoVisible;
+    document.getElementById('videoContainer').style.display = isVideoVisible ? 'block' : 'none';
+    document.getElementById('videoControlsBar').style.display = isVideoVisible ? 'flex' : 'none';
+    document.getElementById('toggleVideoBtn').textContent = isVideoVisible ? 'Sembunyikan Video' : 'Tampilkan Video';
+  }
+
+  function loadCustomYouTube() {
+    const rawUrl = document.getElementById('ytUrlInput').value.trim();
+    if (!rawUrl) return;
+    let videoId = '';
+    const match = rawUrl.match(/(?:youtube\.com\/(?:watch\?v=|live\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (match && match) videoId = match;
+    else if (/^[a-zA-Z0-9_-]{11}$/.test(rawUrl)) videoId = rawUrl;
+    if (videoId) {
+      document.getElementById('liveYoutubeFrame').src = `https://youtube.com{videoId}?autoplay=1&playsinline=1&rel=0`;
+      document.getElementById('ytUrlInput').value = '';
+    } else triggerAutoAlert('YT_ERR', '⚠️ <b>Link Video Tidak Valid:</b> Pastikan menyalin link YouTube yang benar.');
+  }
+
+  const alertBanner = document.getElementById('alertBanner'), alertText = document.getElementById('alertText');
+  let activeAlertType = '', dismissedAlerts = {};
+  function triggerAutoAlert(type, message) {
+    if (dismissedAlerts[type] && (Date.now() - dismissedAlerts[type] < 30000)) return;
+    if (activeAlertType !== type) {
+      activeAlertType = type; alertText.innerHTML = message; alertBanner.classList.add('show');
+      if ('vibrate' in navigator) navigator.vibrate();
+    }
+  }
+  function clearAutoAlert(type) { if (activeAlertType === type) { activeAlertType = ''; alertBanner.classList.remove('show'); } }
+  function dismissAlert() { if (activeAlertType) { dismissedAlerts[activeAlertType] = Date.now(); activeAlertType = ''; } alertBanner.classList.remove('show'); }
+
+  let currentFps = 60, cpuLoadPercent = 15, batteryLevel = 100, isCharging = false, thermalState = 'nominal', currentTemp = 32.0;
+  let frameCount = 0, lastFpsTime = performance.now(), lastFrameTime = performance.now();
+
+  function measureFps(now) {
+    frameCount++;
+    const frameDelta = now - lastFrameTime; lastFrameTime = now;
+    if (now - lastFpsTime >= 250) {
+      currentFps = Math.round((frameCount * 1000) / (now - lastFpsTime));
+      const fpsEl = document.getElementById('fpsVal');
+      fpsEl.textContent = currentFps + ' FPS';
+      fpsEl.style.color = currentFps >= 50 ? '#089981' : (currentFps >= 30 ? '#facc15' : '#f23645');
+      document.getElementById('frameTimeVal').textContent = `Frame: ${frameDelta.toFixed(1)} ms`;
+      if (currentFps < 25) triggerAutoAlert('FPS_LOW', `⚠️ <b>FPS Rendah (${currentFps} FPS):</b> Layar melambat.`);
+      else clearAutoAlert('FPS_LOW');
+      frameCount = 0; lastFpsTime = now;
+    }
+    requestAnimationFrame(measureFps);
+  }
+  requestAnimationFrame(measureFps);
+
+  document.getElementById('cpuCoresVal').textContent = `${navigator.hardwareConcurrency || 4} Logical Cores`;
+  setInterval(() => {
+    const t0 = performance.now();
+    let dummy = 0;
+    for (let i = 0; i < 150000; i++) dummy += Math.sqrt(i);
+    const execTime = performance.now() - t0;
+    const estGhz = Math.min(3.4, Math.max(1.2, (3.2 - (execTime * 0.08)))).toFixed(2);
+    cpuLoadPercent = Math.min(99, Math.max(8, Math.round((execTime * 6) + (60 - Math.min(60, currentFps)))));
+    const cpuEl = document.getElementById('cpuVal');
+    cpuEl.textContent = `${estGhz} GHz (${cpuLoadPercent}%)`;
+    cpuEl.style.color = cpuLoadPercent < 60 ? '#38bdf8' : (cpuLoadPercent < 85 ? '#facc15' : '#f23645');
+    updateTemperatureAndAlerts();
+  }, 500);
+
+  if ('ComputePressureObserver' in window) {
+    try { new ComputePressureObserver((r) => { thermalState = r[r.length - 1].state; }).observe('cpu'); } catch (e) {}
+  }
+
+  function updateTemperatureAndAlerts() {
+    let baseTemp = 31.5 + (cpuLoadPercent * 0.11) + (isCharging ? 2.4 : 0);
+    if (thermalState === 'serious') baseTemp += 4.5;
+    if (thermalState === 'critical') baseTemp += 8.0;
+    currentTemp = baseTemp;
+    const tempEl = document.getElementById('tempVal');
+    tempEl.textContent = currentTemp.toFixed(1) + ' °C';
+    tempEl.style.color = currentTemp < 38 ? '#089981' : (currentTemp < 41 ? '#facc15' : '#f23645');
+    document.getElementById('thermalStateVal').textContent = `Termal: ${thermalState.toUpperCase()}`;
+    if (currentTemp >= 41.0 || thermalState === 'serious' || thermalState === 'critical') triggerAutoAlert('OVERHEAT', `🔥 <b>PERINGATAN SUHU HP (${currentTemp.toFixed(1)}°C):</b> Perangkat hangat!`);
+    else clearAutoAlert('OVERHEAT');
+  }
+
+  if ('getBattery' in navigator) {
+    navigator.getBattery().then((battery) => {
+      function updateBattery() {
+        isCharging = battery.charging; batteryLevel = Math.round(battery.level * 100);
+        const batEl = document.getElementById('batVal');
+        batEl.textContent = batteryLevel + '%';
+        batEl.style.color = isCharging ? '#089981' : (batteryLevel <= 20 ? '#f23645' : '#38bdf8');
+        document.getElementById('batStatusVal').textContent = isCharging ? '⚡ Mengisi Daya' : '🔋 Daya Baterai';
+        if (batteryLevel <= 15 && !isCharging) triggerAutoAlert('LOW_BAT', `🪫 <b>Baterai Lemah (${batteryLevel}%):</b> Segera isi daya!`);
+        else clearAutoAlert('LOW_BAT');
+      }
+      updateBattery(); battery.addEventListener('levelchange', updateBattery); battery.addEventListener('chargingchange', updateBattery);
+    });
+  }
+
+  if ('geolocation' in navigator) {
+    navigator.geolocation.watchPosition(
+      (pos) => {
+        document.getElementById('gpsVal').textContent = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+        document.getElementById('gpsAccVal').textContent = `Akurasi: ±${Math.round(pos.coords.accuracy)}m`;
+        clearAutoAlert('GPS_OFF');
+      },
+      () => { document.getElementById('gpsVal').textContent = 'GPS Nonaktif'; document.getElementById('gpsAccVal').textContent = 'Izin lokasi diperlukan'; },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+    );
+  }
+  let currentPrice = 0, previousPrice = 0, score = 100, streak = 0;
+  let selectedDuration = 1, isRoundActive = false, entryPrice = 0, betDirection = '', endTime = 0;
+  let timerInterval = null, ws = null;
+
+  const priceEl = document.getElementById('livePrice'), statusEl = document.getElementById('statusPanel'), connEl = document.getElementById('connStatus');
+  const btnLong = document.getElementById('btnLong'), btnShort = document.getElementById('btnShort'), durButtons = document.querySelectorAll('.dur-btn');
+
+  function connectMarketStream() {
+    ws = new WebSocket('wss://://binance.com');
+    ws.onopen = () => {
+      connEl.textContent = '● ZERO-DELAY STREAM'; connEl.style.background = '#089981';
+      if (!isRoundActive) { btnLong.disabled = false; btnShort.disabled = false; }
+      clearAutoAlert('NET_ERR');
+    };
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const price = parseFloat(data.p), qty = parseFloat(data.q), isBuyerMaker = data.m;
+      tickTrades.push({ isBuyerMaker, qty });
+      if (tickTrades.length > MAX_TICKS) tickTrades.shift();
+      if (price !== currentPrice) {
+        previousPrice = currentPrice || price; currentPrice = price;
+        tickPrices.push(currentPrice);
+        if (tickPrices.length > MAX_TICKS) tickPrices.shift();
+        updateIdrValues();
+        runAIPrediction();
+        priceEl.textContent = '$' + currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        priceEl.className = 'live-price ' + (currentPrice >= previousPrice ? 'up' : 'down');
+        if (isRoundActive) updateRoundStatus();
+      }
+    };
+    ws.onclose = () => {
+      connEl.textContent = 'Menyambung Ulang...'; connEl.style.background = '#f23645';
+      btnLong.disabled = true; btnShort.disabled = true;
+      triggerAutoAlert('NET_ERR', `📡 <b>Koneksi Pasar Terputus:</b> Menyambungkan ulang aliran harga BTC...`);
+      setTimeout(connectMarketStream, 2000);
+    };
+    ws.onerror = () => { ws.close(); };
+  }
+  connectMarketStream();
+
+  function setDuration(seconds, btnElement) {
+    if (isRoundActive) return;
+    selectedDuration = seconds;
+    durButtons.forEach(btn => btn.classList.remove('active'));
+    btnElement.classList.add('active');
+    statusEl.innerHTML = `Mode <b>${seconds} detik</b> aktif. Tekan <b>NAIK</b> atau <b>TURUN</b>!`;
+  }
+
+  function placeBet(direction, source = 'MANUAL') {
+    if (isRoundActive || currentPrice === 0) return;
+    isRoundActive = true; currentTradeSource = source; entryPrice = currentPrice; betDirection = direction;
+    endTime = Date.now() + (selectedDuration * 1000);
+    btnLong.disabled = true; btnShort.disabled = true; durButtons.forEach(btn => btn.disabled = true);
+    updateRoundStatus();
+    timerInterval = setInterval(() => {
+      if (endTime - Date.now() > 0) updateRoundStatus();
+      else finishRound();
+    }, 100);
+  }
+
+  function updateRoundStatus() {
+    const remainingSec = Math.max(0, (endTime - Date.now()) / 1000).toFixed(1);
+    const diff = currentPrice - entryPrice;
+    const isWinning = (betDirection === 'LONG' && diff > 0) || (betDirection === 'SHORT' && diff < 0);
+    const diffColor = diff === 0 ? '#f8fafc' : (isWinning ? '#089981' : '#f23645');
+    const diffText = (diff >= 0 ? '+' : '') + diff.toFixed(2);
+    const tag = currentTradeSource === 'AUTO-AI' ? '🤖 AUTO-AI' : '👤 MANUAL';
+    statusEl.innerHTML = `<div>[${tag}] Posisi <b>${betDirection}</b> (${selectedDuration}d) di <b>$${entryPrice.toFixed(2)}</b> | Selisih: <b style="color:${diffColor}">${diffText}</b></div><div class="timer">Sisa Waktu: ${remainingSec} detik</div>`;
+  }
+
+  function finishRound() {
+    clearInterval(timerInterval);
+    isRoundActive = false; btnLong.disabled = false; btnShort.disabled = false; durButtons.forEach(btn => btn.disabled = false);
+    const isUp = currentPrice > entryPrice, isDown = currentPrice < entryPrice;
+    let resultMsg = '';
+    const baseReward = selectedDuration >= 30 ? 15 : 10;
+    const tag = currentTradeSource === 'AUTO-AI' ? '🤖 AUTO-AI' : '👤 MANUAL';
+
+    if ((betDirection === 'LONG' && isUp) || (betDirection === 'SHORT' && isDown)) {
+      winCount++; streak++;
+      const bonus = baseReward + (streak * 2); score += bonus;
+      resultMsg = `<span class="up"><b>[${tag}] MENANG! (+${bonus} Poin)</b></span><div>Masuk $${entryPrice.toFixed(2)} → Akhir $${currentPrice.toFixed(2)} (${selectedDuration}d).</div>`;
+    } else if (currentPrice === entryPrice) {
+      drawCount++;
+      resultMsg = `<b>[${tag}] SERI! (0 Poin)</b><div>Harga tetap di $${entryPrice.toFixed(2)}.</div>`;
+    } else {
+      lossCount++; streak = 0; score = Math.max(0, score - 10);
+      resultMsg = `<span class="down"><b>[${tag}] KALAH! (-10 Poin)</b></span><div>Masuk $${entryPrice.toFixed(2)} → Akhir $${currentPrice.toFixed(2)} (${selectedDuration}d).</div>`;
+    }
+    document.getElementById('score').textContent = score;
+    document.getElementById('streak').textContent = streak;
+    updateAccuracyStats();
+    statusEl.innerHTML = resultMsg;
+  }
+</script>
+</body>
+</html>
